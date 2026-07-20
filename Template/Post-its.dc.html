@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; padding: 0; }
+  a { color: #C25A4A; }
+  a:hover { color: #a8412f; }
+  @keyframes sheetIn { from { transform: translateY(100%); } to { transform: translateY(0); } }
+  @keyframes snackIn { from { transform: translate(-50%, 120%); opacity: 0; } to { transform: translate(-50%, 0); opacity: 1; } }
+  @keyframes fabIn { from { transform: scale(0) rotate(-90deg); } to { transform: scale(1) rotate(0); } }
+  .tapfx:active { transform: scale(.94); }
+  .rowsc::-webkit-scrollbar { display: none; }
+</style>
+</helmet>
+<div style="position:relative; width:100%; height:100vh; min-height:640px; margin:0 auto; max-width:440px; background:#F1EBDD; background-image:radial-gradient(rgba(120,105,80,.10) 1px, transparent 1px); background-size:22px 22px; font-family:'Space Grotesk',system-ui,sans-serif; color:#2B2924; overflow:hidden; display:flex; flex-direction:column;">
+
+  <header style="flex:0 0 auto; padding:22px 22px 10px; display:flex; align-items:flex-end; justify-content:space-between; background:linear-gradient(#F1EBDD 78%, rgba(241,235,221,0)); z-index:5;">
+    <div>
+      <div style="font-family:'Caveat',cursive; font-weight:700; font-size:34px; line-height:.9; color:#2B2924; white-space:nowrap;">Mes post-its</div>
+      <div style="font-size:13px; letter-spacing:.02em; color:#8A8065; margin-top:6px;">{{ activeCount }} à faire · {{ doneCount }} terminé{{ donePlural }}</div>
+    </div>
+    <button onClick="{{ openMenu }}" aria-label="Menu" class="tapfx" style="width:44px; height:44px; border-radius:13px; border:none; background:#E4DBC5; display:flex; align-items:center; justify-content:center; box-shadow:inset 0 0 0 1px rgba(120,105,80,.18); cursor:pointer; transition:transform .12s;">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#6E664F" stroke-width="2" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+    </button>
+  </header>
+
+  <sc-if value="{{ hasProjects }}" hint-placeholder-val="{{ false }}">
+    <div class="rowsc" style="flex:0 0 auto; display:flex; gap:8px; padding:4px 18px 10px; overflow-x:auto; z-index:4;">
+      <sc-for list="{{ filterChips }}" as="chip" hint-placeholder-count="0">
+        <button onClick="{{ chip.onPick }}" class="tapfx" style="{{ chip.style }}">{{ chip.label }}</button>
+      </sc-for>
+    </div>
+  </sc-if>
+
+  <div style="flex:1 1 auto; overflow-y:auto; -webkit-overflow-scrolling:touch; padding:4px 18px 130px;">
+
+    <sc-if value="{{ isEmpty }}" hint-placeholder-val="{{ true }}">
+      <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; padding:64px 24px 40px; gap:20px;">
+        <div style="width:120px; height:120px; border-radius:6px; border:2px dashed #C6BB9C; background:rgba(255,255,255,.35); transform:rotate(-4deg); display:flex; align-items:center; justify-content:center;">
+          <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#C6BB9C" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+        </div>
+        <div>
+          <div style="font-family:'Caveat',cursive; font-size:28px; font-weight:700; color:#5C5545;">{{ emptyTitle }}</div>
+          <div style="font-size:14px; color:#9A9078; margin-top:4px; max-width:230px;">{{ emptyHint }}</div>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-for list="{{ groups }}" as="grp" hint-placeholder-count="0">
+      <div style="margin-top:6px;">
+        <sc-if value="{{ grp.showHeader }}" hint-placeholder-val="{{ false }}">
+          <div style="display:flex; align-items:center; gap:8px; padding:14px 6px 2px;">
+            <span style="{{ grp.dotStyle }}"></span>
+            <span style="font-size:12px; font-weight:600; letter-spacing:.08em; text-transform:uppercase; color:#8A8065;">{{ grp.name }}</span>
+            <span style="font-size:12px; color:#B4AA8E;">{{ grp.count }}</span>
+          </div>
+        </sc-if>
+        <sc-for list="{{ grp.tasks }}" as="task" hint-placeholder-count="0">
+          <div data-task="{{ task.id }}" style="{{ task.cardStyle }}">
+            <div style="{{ task.tapeStyle }}"></div>
+            <button onClick="{{ task.onToggle }}" aria-label="Terminer" class="tapfx" style="{{ task.checkStyle }}">
+              <span style="{{ task.checkInner }}">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="{{ task.checkStroke }}" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+              </span>
+            </button>
+            <div onClick="{{ task.onEdit }}" style="cursor:pointer; flex:1; min-width:0; padding:2px 30px 2px 0; min-height:30px;">
+              <div style="{{ task.titleStyle }}">{{ task.title }}</div>
+              <sc-if value="{{ task.hasNote }}" hint-placeholder-val="{{ false }}">
+                <div style="{{ task.noteStyle }}">{{ task.note }}</div>
+              </sc-if>
+            </div>
+            <div onPointerDown="{{ task.onDragStart }}" aria-label="Réordonner" style="position:absolute; right:8px; bottom:8px; width:34px; height:34px; display:flex; align-items:center; justify-content:center; cursor:grab; touch-action:none; color:rgba(43,41,36,.26);">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><circle cx="9" cy="6" r="1.6"/><circle cx="15" cy="6" r="1.6"/><circle cx="9" cy="12" r="1.6"/><circle cx="15" cy="12" r="1.6"/><circle cx="9" cy="18" r="1.6"/><circle cx="15" cy="18" r="1.6"/></svg>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+    </sc-for>
+
+
+  </div>
+
+  <button onClick="{{ openAdd }}" class="tapfx" aria-label="Ajouter" style="position:absolute; right:20px; bottom:26px; width:62px; height:62px; border-radius:22px; border:none; background:#2B2924; color:#F1EBDD; box-shadow:0 12px 26px rgba(43,41,36,.34); cursor:pointer; display:flex; align-items:center; justify-content:center; z-index:20; animation:fabIn .5s cubic-bezier(.2,1.3,.4,1) both; transition:transform .12s;">
+    <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+  </button>
+
+  <sc-if value="{{ undoOpen }}" hint-placeholder-val="{{ false }}">
+    <div style="position:absolute; left:50%; bottom:100px; transform:translateX(-50%); z-index:30; display:flex; align-items:center; gap:14px; background:#2B2924; color:#F1EBDD; padding:12px 12px 12px 18px; border-radius:16px; box-shadow:0 10px 24px rgba(0,0,0,.28); font-size:14px; white-space:nowrap; animation:snackIn .28s cubic-bezier(.2,1,.3,1) both;">
+      <span>Post-it supprimé</span>
+      <button onClick="{{ undoDelete }}" style="background:rgba(255,255,255,.14); border:none; color:#FFDf9b; font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:14px; padding:8px 14px; border-radius:10px; cursor:pointer;">Annuler</button>
+    </div>
+  </sc-if>
+
+  <!-- Add / edit bottom sheet -->
+  <div onClick="{{ closeSheet }}" style="{{ scrimStyle }}"></div>
+  <div style="{{ sheetStyle }}">
+    <div style="width:44px; height:5px; border-radius:3px; background:#D8CEB5; margin:0 auto 18px;"></div>
+    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:16px;">
+      <div style="font-family:'Caveat',cursive; font-size:30px; font-weight:700; color:#2B2924;">{{ sheetTitle }}</div>
+      <sc-if value="{{ isEditing }}" hint-placeholder-val="{{ false }}">
+        <button onClick="{{ deleteCurrent }}" aria-label="Supprimer" class="tapfx" style="width:44px; height:44px; border-radius:12px; border:none; background:#F4E2DE; color:#C25A4A; display:flex; align-items:center; justify-content:center; cursor:pointer; transition:transform .12s;">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/></svg>
+        </button>
+      </sc-if>
+    </div>
+
+    <input value="{{ form.title }}" onInput="{{ setTitle }}" placeholder="Titre de la tâche" style="width:100%; border:none; outline:none; background:#F6F1E5; border-radius:14px; padding:15px 16px; font-family:'Space Grotesk',sans-serif; font-size:17px; font-weight:600; color:#2B2924; box-shadow:inset 0 0 0 1.5px rgba(120,105,80,.16);">
+    <textarea value="{{ form.note }}" onInput="{{ setNote }}" placeholder="Note (optionnel)" rows="2" style="width:100%; margin-top:12px; border:none; outline:none; resize:none; background:#F6F1E5; border-radius:14px; padding:15px 16px; font-family:'Space Grotesk',sans-serif; font-size:15px; color:#4A463B; box-shadow:inset 0 0 0 1.5px rgba(120,105,80,.16);"></textarea>
+
+    <div style="font-size:12px; font-weight:600; letter-spacing:.06em; text-transform:uppercase; color:#8A8065; margin:18px 2px 8px;">Couleur</div>
+    <div style="display:flex; align-items:center; gap:12px;">
+      <sc-for list="{{ swatches }}" as="sw" hint-placeholder-count="5">
+        <button onClick="{{ sw.onPick }}" aria-label="Couleur" style="{{ sw.style }}"></button>
+      </sc-for>
+    </div>
+
+    <div style="font-size:12px; font-weight:600; letter-spacing:.06em; text-transform:uppercase; color:#8A8065; margin:18px 2px 8px;">Projet</div>
+    <div class="rowsc" style="display:flex; gap:8px; overflow-x:auto; padding-bottom:2px;">
+      <sc-for list="{{ projectChips }}" as="pc" hint-placeholder-count="1">
+        <button onClick="{{ pc.onPick }}" class="tapfx" style="{{ pc.style }}">{{ pc.label }}</button>
+      </sc-for>
+      <button onClick="{{ startCreateProject }}" class="tapfx" style="flex:0 0 auto; padding:9px 14px; border-radius:11px; border:1.5px dashed #C6BB9C; background:transparent; color:#8A8065; font-family:'Space Grotesk',sans-serif; font-size:13px; font-weight:600; cursor:pointer; white-space:nowrap;">＋ Projet</button>
+    </div>
+    <sc-if value="{{ creatingProject }}" hint-placeholder-val="{{ false }}">
+      <div style="display:flex; gap:8px; margin-top:10px;">
+        <input value="{{ projectDraft }}" onInput="{{ setProjectDraft }}" placeholder="Nom du projet" style="flex:1; border:none; outline:none; background:#F6F1E5; border-radius:12px; padding:12px 14px; font-family:'Space Grotesk',sans-serif; font-size:14px; color:#2B2924; box-shadow:inset 0 0 0 1.5px rgba(120,105,80,.16);">
+        <button onClick="{{ confirmCreateProject }}" class="tapfx" style="flex:0 0 auto; padding:0 18px; border:none; border-radius:12px; background:#2B2924; color:#F1EBDD; font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:14px; cursor:pointer;">OK</button>
+      </div>
+    </sc-if>
+
+    <button onClick="{{ save }}" class="tapfx" style="{{ saveStyle }}">{{ saveLabel }}</button>
+  </div>
+
+  <!-- Burger drawer -->
+  <div onClick="{{ closeMenu }}" style="{{ menuScrimStyle }}"></div>
+  <div style="{{ menuStyle }}">
+    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:6px;">
+      <div style="font-family:'Caveat',cursive; font-size:30px; font-weight:700; color:#2B2924;">Menu</div>
+      <button onClick="{{ closeMenu }}" aria-label="Fermer" class="tapfx" style="width:40px; height:40px; border-radius:11px; border:none; background:#EFE7D3; color:#6E664F; display:flex; align-items:center; justify-content:center; cursor:pointer;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
+      </button>
+    </div>
+
+    <div style="font-size:12px; font-weight:600; letter-spacing:.06em; text-transform:uppercase; color:#8A8065; margin:20px 2px 10px;">Projets</div>
+    <sc-if value="{{ hasProjects }}" hint-placeholder-val="{{ false }}">
+      <div style="display:flex; flex-direction:column; gap:8px;">
+        <sc-for list="{{ menuProjects }}" as="mp" hint-placeholder-count="0">
+          <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; background:#F6F1E5; border-radius:13px; padding:12px 12px 12px 14px;">
+            <span style="display:flex; align-items:center; gap:10px; min-width:0;">
+              <span style="{{ mp.dotStyle }}"></span>
+              <span style="font-size:15px; font-weight:600; color:#3A362C; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ mp.name }}</span>
+              <span style="font-size:13px; color:#B4AA8E;">{{ mp.count }}</span>
+            </span>
+            <button onClick="{{ mp.onDelete }}" aria-label="Supprimer projet" class="tapfx" style="flex:0 0 auto; width:36px; height:36px; border-radius:10px; border:none; background:transparent; color:#B4AA8E; display:flex; align-items:center; justify-content:center; cursor:pointer;">
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/></svg>
+            </button>
+          </div>
+        </sc-for>
+      </div>
+    </sc-if>
+    <sc-if value="{{ noProjects }}" hint-placeholder-val="{{ false }}">
+      <div style="font-size:14px; color:#9A9078; padding:2px 2px 4px;">Aucun projet pour l'instant.</div>
+    </sc-if>
+
+    <div style="display:flex; gap:8px; margin-top:12px;">
+      <input value="{{ menuDraft }}" onInput="{{ setMenuDraft }}" placeholder="Nouveau projet" style="flex:1; border:none; outline:none; background:#F6F1E5; border-radius:12px; padding:12px 14px; font-family:'Space Grotesk',sans-serif; font-size:14px; color:#2B2924; box-shadow:inset 0 0 0 1.5px rgba(120,105,80,.16);">
+      <button onClick="{{ addMenuProject }}" class="tapfx" style="flex:0 0 auto; padding:0 18px; border:none; border-radius:12px; background:#2B2924; color:#F1EBDD; font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:14px; cursor:pointer;">Ajouter</button>
+    </div>
+
+    <div style="height:1px; background:rgba(120,105,80,.16); margin:22px 0;"></div>
+    <button onClick="{{ clearDone }}" class="tapfx" style="{{ clearDoneStyle }}">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/></svg>
+      Effacer les terminées{{ clearDoneCount }}
+    </button>
+  </div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;: {&quot;width&quot;: 402, &quot;height&quot;: 860}}">
+const KEY = 'postit.tasks.v1';
+const PKEY = 'postit.projects.v1';
+const PALETTE = {
+  butter: { bg: '#FFE79A', edge: '#F2CE5E' },
+  rose:   { bg: '#FBC3D2', edge: '#EE9DB2' },
+  sky:    { bg: '#B7DCF4', edge: '#8FC2E6' },
+  mint:   { bg: '#C4E9CF', edge: '#9AD3AB' },
+  lilac:  { bg: '#DBCDF3', edge: '#BCA6E5' },
+};
+const ORDER = ['butter', 'rose', 'sky', 'mint', 'lilac'];
+const PDOTS = ['#C25A4A', '#4A8FB0', '#5C9A6B', '#B98B34', '#8E6EB5', '#B0587F'];
+
+class Component extends DCLogic {
+  state = {
+    tasks: this.loadJSON(KEY),
+    projects: this.loadJSON(PKEY),
+    filter: 'all',
+    sheetOpen: false,
+    editingId: null,
+    form: { title: '', note: '', color: 'butter', projectId: null },
+    showDone: false,
+    undo: null,
+    draggingId: null,
+    menuOpen: false,
+    creatingProject: false,
+    projectDraft: '',
+    menuDraft: '',
+    completing: {},
+  };
+
+  loadJSON(k) {
+    try { const r = localStorage.getItem(k); if (r) return JSON.parse(r); } catch (e) {}
+    return [];
+  }
+  persistTasks(tasks) { try { localStorage.setItem(KEY, JSON.stringify(tasks)); } catch (e) {} }
+  persistProjects(projects) { try { localStorage.setItem(PKEY, JSON.stringify(projects)); } catch (e) {} }
+  commit(tasks) { this.persistTasks(tasks); this.setState({ tasks }); }
+
+  componentDidMount() {
+    this._move = (e) => this.onDragMove(e);
+    this._up = () => this.onDragEnd();
+    window.addEventListener('pointermove', this._move, { passive: false });
+    window.addEventListener('pointerup', this._up);
+  }
+  componentWillUnmount() {
+    window.removeEventListener('pointermove', this._move);
+    window.removeEventListener('pointerup', this._up);
+    if (this._undoTimer) clearTimeout(this._undoTimer);
+  }
+
+  // sheet
+  openAdd = () => this.setState({ sheetOpen: true, editingId: null, creatingProject: false, projectDraft: '', form: { title: '', note: '', color: 'butter', projectId: this.state.filter === 'all' ? null : this.state.filter } });
+  openEdit = (t) => this.setState({ sheetOpen: true, editingId: t.id, creatingProject: false, projectDraft: '', form: { title: t.title, note: t.note || '', color: t.color, projectId: t.projectId || null } });
+  closeSheet = () => this.setState({ sheetOpen: false, editingId: null, creatingProject: false });
+  setTitle = (e) => { const v = e.target.value; this.setState(s => ({ form: { ...s.form, title: v } })); };
+  setNote = (e) => { const v = e.target.value; this.setState(s => ({ form: { ...s.form, note: v } })); };
+  pickColor = (c) => this.setState(s => ({ form: { ...s.form, color: c } }));
+  pickProject = (id) => this.setState(s => ({ form: { ...s.form, projectId: id } }));
+
+  save = () => {
+    const f = this.state.form;
+    const title = f.title.trim();
+    if (!title) return;
+    let tasks = this.state.tasks.slice();
+    if (this.state.editingId) {
+      tasks = tasks.map(t => t.id === this.state.editingId ? { ...t, title, note: f.note.trim(), color: f.color, projectId: f.projectId || null } : t);
+    } else {
+      const maxOrder = tasks.filter(t => !t.done).reduce((m, t) => Math.max(m, t.order), -1);
+      tasks.push({ id: crypto.randomUUID(), title, note: f.note.trim(), color: f.color, projectId: f.projectId || null, done: false, createdAt: Date.now(), order: maxOrder + 1 });
+    }
+    this.persistTasks(tasks);
+    this.setState({ tasks, sheetOpen: false, editingId: null, creatingProject: false });
+  };
+
+  toggleDone = (id) => this.commit(this.state.tasks.map(t => t.id === id ? { ...t, done: !t.done } : t));
+
+  deleteCurrent = () => { const id = this.state.editingId; if (!id) return; this.setState({ sheetOpen: false, editingId: null }); this.removeTask(id); };
+  removeTask = (id) => {
+    const task = this.state.tasks.find(t => t.id === id);
+    if (!task) return;
+    const tasks = this.state.tasks.filter(t => t.id !== id);
+    this.persistTasks(tasks);
+    if (this._undoTimer) clearTimeout(this._undoTimer);
+    this.setState({ tasks, undo: task });
+    this._undoTimer = setTimeout(() => this.setState({ undo: null }), 4200);
+  };
+  undoDelete = () => {
+    if (!this.state.undo) return;
+    if (this._undoTimer) clearTimeout(this._undoTimer);
+    const tasks = this.state.tasks.concat([this.state.undo]);
+    this.persistTasks(tasks);
+    this.setState({ tasks, undo: null });
+  };
+
+  toggleShowDone = () => this.setState(s => ({ showDone: !s.showDone }));
+
+  // projects
+  addProject = (name) => {
+    const n = (name || '').trim();
+    if (!n) return null;
+    const id = crypto.randomUUID();
+    const projects = this.state.projects.concat([{ id, name: n }]);
+    this.persistProjects(projects);
+    this.setState({ projects });
+    return id;
+  };
+  startCreateProject = () => this.setState(s => ({ creatingProject: !s.creatingProject, projectDraft: '' }));
+  setProjectDraft = (e) => { const v = e.target.value; this.setState({ projectDraft: v }); };
+  confirmCreateProject = () => {
+    const id = this.addProject(this.state.projectDraft);
+    if (id) this.setState(s => ({ form: { ...s.form, projectId: id }, creatingProject: false, projectDraft: '' }));
+  };
+  setMenuDraft = (e) => { const v = e.target.value; this.setState({ menuDraft: v }); };
+  addMenuProject = () => { if (this.addProject(this.state.menuDraft)) this.setState({ menuDraft: '' }); };
+  deleteProject = (id) => {
+    const projects = this.state.projects.filter(p => p.id !== id);
+    const tasks = this.state.tasks.map(t => t.projectId === id ? { ...t, projectId: null } : t);
+    this.persistProjects(projects); this.persistTasks(tasks);
+    this.setState(s => ({ projects, tasks, filter: s.filter === id ? 'all' : s.filter }));
+  };
+  setFilter = (id) => this.setState({ filter: id });
+
+  // menu
+  openMenu = () => this.setState({ menuOpen: true, menuDraft: '' });
+  closeMenu = () => this.setState({ menuOpen: false });
+  clearDone = () => {
+    const tasks = this.state.tasks.filter(t => !t.done);
+    this.persistTasks(tasks);
+    this.setState({ tasks });
+  };
+
+  // drag reorder
+  startDrag = (id, e) => { e.preventDefault(); this._dragId = id; this.setState({ draggingId: id }); };
+  onDragMove = (e) => {
+    if (!this._dragId) return;
+    e.preventDefault();
+    const el = document.elementFromPoint(e.clientX, e.clientY);
+    const card = el && el.closest && el.closest('[data-task]');
+    if (!card) return;
+    const overId = card.getAttribute('data-task');
+    if (overId && overId !== this._dragId) this.doReorder(this._dragId, overId);
+  };
+  onDragEnd = () => { if (this._dragId) { this._dragId = null; this.setState({ draggingId: null }); } };
+  doReorder = (dragId, overId) => {
+    const all = this.state.tasks.slice().sort((a, b) => a.order - b.order);
+    const from = all.findIndex(t => t.id === dragId);
+    const to = all.findIndex(t => t.id === overId);
+    if (from < 0 || to < 0) return;
+    const [moved] = all.splice(from, 1);
+    all.splice(to, 0, moved);
+    const orderMap = {};
+    all.forEach((t, i) => { orderMap[t.id] = i; });
+    const tasks = this.state.tasks.map(t => ({ ...t, order: orderMap[t.id] }));
+    this.commit(tasks);
+  };
+
+  hash(s) { let h = 0; for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0; return h; }
+  projDot(id) { const i = this.state.projects.findIndex(p => p.id === id); return PDOTS[((i % PDOTS.length) + PDOTS.length) % PDOTS.length] || PDOTS[0]; }
+
+  decorate(t) {
+    const p = PALETTE[t.color] || PALETTE.butter;
+    const dragging = this.state.draggingId === t.id;
+    const vd = t.done || !!this.state.completing[t.id];
+    const rot = vd ? 0 : ((this.hash(t.id) % 5) - 2) * 0.9;
+    const cardStyle = [
+      'position:relative', 'background:' + p.bg, 'border-radius:5px',
+      'padding:15px 14px 18px', 'margin:14px 4px',
+      'display:flex', 'align-items:flex-start', 'gap:13px',
+      'box-shadow:' + (dragging ? '0 18px 34px rgba(43,41,36,.30)' : '0 6px 14px rgba(43,41,36,.14)'),
+      'transform:rotate(' + rot + 'deg)' + (dragging ? ' scale(1.03)' : ''),
+      'transition:transform .28s, box-shadow .18s, opacity .28s',
+      'z-index:' + (dragging ? 15 : 1), vd ? 'opacity:.62' : 'opacity:1',
+    ].join(';');
+    const titleStyle = [
+      "font-family:'Caveat',cursive", 'font-weight:600', 'font-size:' + (vd ? '21px' : '24px'),
+      'line-height:1.12', 'color:#3A362C', 'word-break:break-word', 'transition:font-size .2s',
+      vd ? 'text-decoration:line-through; text-decoration-color:rgba(58,54,44,.5)' : '',
+    ].join(';');
+    const noteStyle = ["font-family:'Caveat',cursive", 'font-size:18px', 'line-height:1.2', 'color:rgba(58,54,44,.72)', 'margin-top:4px', 'word-break:break-word'].join(';');
+    const checkStyle = ['flex:0 0 auto', 'width:44px', 'height:44px', 'margin:-2px -2px 0 -4px', 'border:none', 'background:transparent', 'display:flex', 'align-items:center', 'justify-content:center', 'cursor:pointer', 'padding:0', 'transition:transform .12s'].join(';');
+    const checkInner = ['width:30px', 'height:30px', 'border-radius:50%', 'border:3px solid ' + (vd ? '#3A362C' : p.edge), 'background:' + (vd ? '#3A362C' : 'rgba(255,255,255,.6)'), 'box-shadow:0 1px 2px rgba(0,0,0,.08)', 'display:flex', 'align-items:center', 'justify-content:center', 'transition:background .15s, border-color .15s'].join(';');
+    const tapeStyle = ['position:absolute', 'top:-11px', 'left:50%', 'transform:translateX(-50%) rotate(' + ((this.hash(t.id) % 7) - 3) + 'deg)', 'width:66px', 'height:22px', 'background:rgba(255,255,255,.5)', 'box-shadow:0 1px 3px rgba(0,0,0,.08)'].join(';');
+    return {
+      ...t, hasNote: !!(t.note && t.note.length),
+      cardStyle, titleStyle, noteStyle, checkStyle, checkInner, tapeStyle,
+      checkStroke: vd ? '#FFE79A' : 'transparent',
+      onToggle: () => this.toggleDone(t.id),
+      onEdit: () => this.openEdit(t),
+      onDragStart: (e) => this.startDrag(t.id, e),
+    };
+  }
+
+  renderVals() {
+    const s = this.state;
+    const projById = {}; s.projects.forEach(p => { projById[p.id] = p; });
+    const inFilter = (t) => s.filter === 'all' || (t.projectId || 'all-none') === s.filter;
+
+    const allSorted = s.tasks.slice().sort((a, b) => a.order - b.order);
+    const activeRaw = allSorted.filter(inFilter);
+
+    // groups (all statuses shown in place; done tasks appear struck)
+    let groups = [];
+    if (s.filter === 'all' && s.projects.length > 0) {
+      s.projects.forEach(p => {
+        const ts = activeRaw.filter(t => t.projectId === p.id);
+        if (ts.length) groups.push({ key: p.id, name: p.name, count: ts.length, showHeader: true, dotStyle: 'width:9px;height:9px;border-radius:50%;background:' + this.projDot(p.id), tasks: ts.map(t => this.decorate(t)) });
+      });
+      const none = activeRaw.filter(t => !t.projectId);
+      if (none.length) groups.push({ key: 'none', name: 'Sans projet', count: none.length, showHeader: true, dotStyle: 'width:9px;height:9px;border-radius:50%;background:#C6BB9C', tasks: none.map(t => this.decorate(t)) });
+    } else {
+      groups = [{ key: 'flat', name: '', count: activeRaw.length, showHeader: false, dotStyle: '', tasks: activeRaw.map(t => this.decorate(t)) }];
+    }
+
+    const swatches = ORDER.map(c => {
+      const sel = s.form.color === c;
+      return { key: c, onPick: () => this.pickColor(c), style: ['width:44px', 'height:44px', 'border-radius:12px', 'background:' + PALETTE[c].bg, 'cursor:pointer', 'padding:0', 'transition:transform .12s', sel ? 'border:3px solid #2B2924; transform:scale(1.08)' : 'border:3px solid rgba(0,0,0,.06)', 'box-shadow:0 2px 6px rgba(43,41,36,.14)'].join(';') };
+    });
+
+    const chipBase = (sel) => ['flex:0 0 auto', 'padding:9px 15px', 'border-radius:11px', "font-family:'Space Grotesk',sans-serif", 'font-size:13px', 'font-weight:600', 'cursor:pointer', 'white-space:nowrap', 'transition:transform .12s', sel ? 'background:#2B2924; color:#F1EBDD; border:1.5px solid #2B2924' : 'background:rgba(255,255,255,.5); color:#6E664F; border:1.5px solid rgba(120,105,80,.2)'].join(';');
+    const filterChips = [{ id: 'all', label: 'Tous', onPick: () => this.setFilter('all'), style: chipBase(s.filter === 'all') }]
+      .concat(s.projects.map(p => ({ id: p.id, label: p.name, onPick: () => this.setFilter(p.id), style: chipBase(s.filter === p.id) })));
+
+    const projectChips = [{ id: null, label: 'Aucun', onPick: () => this.pickProject(null), style: chipBase(!s.form.projectId) }]
+      .concat(s.projects.map(p => ({ id: p.id, label: p.name, onPick: () => this.pickProject(p.id), style: chipBase(s.form.projectId === p.id) })));
+
+    const menuProjects = s.projects.map(p => ({ id: p.id, name: p.name, count: s.tasks.filter(t => t.projectId === p.id).length, dotStyle: 'width:11px;height:11px;border-radius:50%;flex:0 0 auto;background:' + this.projDot(p.id), onDelete: () => this.deleteProject(p.id) }));
+
+    const canSave = s.form.title.trim().length > 0;
+    const doneTotal = s.tasks.filter(t => t.done).length;
+
+    const sheetStyle = ['position:absolute', 'left:0', 'right:0', 'bottom:0', 'z-index:40', 'background:#FBF7EC', 'border-radius:26px 26px 0 0', 'padding:14px 22px 30px', 'box-shadow:0 -12px 34px rgba(43,41,36,.22)', 'transition:transform .32s cubic-bezier(.2,1,.3,1)', s.sheetOpen ? 'transform:translateY(0)' : 'transform:translateY(115%)'].join(';');
+    const scrimStyle = ['position:absolute', 'inset:0', 'z-index:35', 'background:rgba(43,41,36,.34)', 'transition:opacity .28s', s.sheetOpen ? 'opacity:1; pointer-events:auto' : 'opacity:0; pointer-events:none'].join(';');
+    const menuStyle = ['position:absolute', 'top:0', 'right:0', 'bottom:0', 'width:82%', 'max-width:340px', 'z-index:50', 'background:#FBF7EC', 'padding:22px 22px 30px', 'box-shadow:-12px 0 34px rgba(43,41,36,.22)', 'overflow-y:auto', 'transition:transform .3s cubic-bezier(.2,1,.3,1)', s.menuOpen ? 'transform:translateX(0)' : 'transform:translateX(105%)'].join(';');
+    const menuScrimStyle = ['position:absolute', 'inset:0', 'z-index:45', 'background:rgba(43,41,36,.34)', 'transition:opacity .28s', s.menuOpen ? 'opacity:1; pointer-events:auto' : 'opacity:0; pointer-events:none'].join(';');
+    const saveStyle = ['width:100%', 'margin-top:22px', 'padding:16px', 'border:none', 'border-radius:16px', "font-family:'Space Grotesk',sans-serif", 'font-size:16px', 'font-weight:700', 'cursor:pointer', 'transition:transform .12s, opacity .15s', canSave ? 'background:#2B2924; color:#F1EBDD' : 'background:#DED5BF; color:#A79E85; cursor:default'].join(';');
+    const clearDoneStyle = ['width:100%', 'display:flex', 'align-items:center', 'justify-content:center', 'gap:10px', 'padding:14px', 'border-radius:14px', "font-family:'Space Grotesk',sans-serif", 'font-size:14px', 'font-weight:600', 'cursor:pointer', doneTotal ? 'background:#F4E2DE; color:#C25A4A; border:none' : 'background:#EFE7D3; color:#B4AA8E; border:none; cursor:default'].join(';');
+
+    const filterName = s.projects.find(p => p.id === s.filter);
+    return {
+      activeCount: s.tasks.filter(t => !t.done).length,
+      doneCount: doneTotal,
+      donePlural: doneTotal > 1 ? 's' : '',
+      isEmpty: activeRaw.length === 0,
+      emptyTitle: s.filter === 'all' ? 'Aucune tâche' : 'Projet vide',
+      emptyHint: s.filter === 'all' ? 'Appuie sur le bouton + pour coller ton premier post-it.' : 'Aucune tâche dans « ' + (filterName ? filterName.name : '') + ' ». Appuie sur +.',
+      hasProjects: s.projects.length > 0,
+      noProjects: s.projects.length === 0,
+      groups,
+      openAdd: this.openAdd,
+      openMenu: this.openMenu, closeMenu: this.closeMenu,
+      closeSheet: this.closeSheet,
+      isEditing: !!s.editingId,
+      sheetTitle: s.editingId ? 'Modifier' : 'Nouveau post-it',
+      saveLabel: s.editingId ? 'Enregistrer' : 'Coller le post-it',
+      form: s.form, setTitle: this.setTitle, setNote: this.setNote,
+      swatches, projectChips, filterChips, menuProjects,
+      creatingProject: s.creatingProject, startCreateProject: this.startCreateProject,
+      projectDraft: s.projectDraft, setProjectDraft: this.setProjectDraft, confirmCreateProject: this.confirmCreateProject,
+      menuDraft: s.menuDraft, setMenuDraft: this.setMenuDraft, addMenuProject: this.addMenuProject,
+      save: this.save, saveStyle, deleteCurrent: this.deleteCurrent,
+      clearDone: this.clearDone, clearDoneStyle, clearDoneCount: doneTotal ? ' · ' + doneTotal : '',
+      sheetStyle, scrimStyle, menuStyle, menuScrimStyle,
+      undoOpen: !!s.undo, undoDelete: this.undoDelete,
+    };
+  }
+}
+</script>
+</body>
+</html>

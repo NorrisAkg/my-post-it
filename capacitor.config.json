@@ -1,0 +1,5 @@
+{
+  "appId": "com.postit.app",
+  "appName": " Post-it",
+  "webDir": ".output/public"
+}
