@@ -27,3 +27,18 @@ allprojects {
 task clean(type: Delete) {
     delete rootProject.buildDir
 }
+allprojects {
+
+    tasks.withType(JavaCompile).configureEach {
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
+    }
+}
+subprojects {
+    afterEvaluate { proj ->
+        if (proj.extensions.findByName('android')) {
+            proj.android.compileOptions.sourceCompatibility = JavaVersion.VERSION_17
+            proj.android.compileOptions.targetCompatibility = JavaVersion.VERSION_17
+        }
+    }
+}

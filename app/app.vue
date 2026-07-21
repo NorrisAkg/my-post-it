@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useTasksStore } from '~/stores/tasks'
+import Onboarding from '~/components/Onboarding.vue'
+import { Preferences } from '@capacitor/preferences'
 
 const store = useTasksStore()
 
@@ -20,6 +22,8 @@ const sheetOpen = ref(false)
 const editingId = ref<string | null>(null)
 const form = ref({ title: '', note: '', color: 'butter', projectId: null as string | null })
 const showDone = ref(false)
+const showOnboarding = ref(false)
+const appReady = ref(false)
 const undoTask = ref<any>(null)
 let undoTimer: any = null
 const draggingId = ref<string | null>(null)
@@ -46,7 +50,10 @@ const noProjects = computed(() => store.projects.length === 0)
 
 const filteredActiveRaw = computed(() => {
   const allSorted = [...store.tasks].sort((a, b) => a.order - b.order)
-  return allSorted.filter(t => filter.value === 'all' || (t.projectId || 'all-none') === filter.value)
+  return allSorted.filter(t =>
+    !t.done &&
+    (filter.value === 'all' || (t.projectId || 'all-none') === filter.value)
+  )
 })
 
 const isEmpty = computed(() => filteredActiveRaw.value.length === 0)
@@ -255,11 +262,21 @@ const startDrag = (id: string, e: PointerEvent) => {
   draggingId.value = id
 }
 
-onMounted(() => {
+const onOnboardingFinished = () => {
+  showOnboarding.value = false
+  Preferences.set({ key: 'onboardingDone', value: 'true' })
+}
+
+onMounted(async () => {
   window.addEventListener('pointermove', onDragMove, { passive: false })
   window.addEventListener('pointerup', onDragEnd)
   window.addEventListener('touchmove', onSwipeMove, { passive: false })
   window.addEventListener('touchend', onSwipeEnd)
+  const { value } = await Preferences.get({ key: 'onboardingDone' })
+  if (!value) {
+    showOnboarding.value = true
+  }
+  appReady.value = true
 })
 
 onUnmounted(() => {
@@ -298,7 +315,9 @@ const chipBase = (sel: boolean) => `flex:0 0 auto;padding:9px 15px;border-radius
 </script>
 
 <template>
-  <div style="position:relative; width:100%; height:100vh; min-height:640px; margin:0 auto; max-width:440px; background:#F1EBDD; background-image:radial-gradient(rgba(120,105,80,.10) 1px, transparent 1px); background-size:22px 22px; font-family:'Space Grotesk',system-ui,sans-serif; color:#2B2924; overflow:hidden; display:flex; flex-direction:column;">
+  <!-- Splash guard: keep background visible until Preferences check is done -->
+  <div v-if="!appReady" style="position:fixed;inset:0;background:#F1EBDD;z-index:999;"></div>
+  <div v-else style="position:relative; width:100%; height:100vh; min-height:640px; margin:0 auto; max-width:440px; background:#F1EBDD; background-image:radial-gradient(rgba(120,105,80,.10) 1px, transparent 1px); background-size:22px 22px; font-family:'Space Grotesk',system-ui,sans-serif; color:#2B2924; overflow:hidden; display:flex; flex-direction:column;">
     
     <header style="flex:0 0 auto; padding:22px 22px 10px; display:flex; align-items:flex-end; justify-content:space-between; background:linear-gradient(#F1EBDD 78%, rgba(241,235,221,0)); z-index:5;">
       <div>
@@ -310,6 +329,7 @@ const chipBase = (sel: boolean) => `flex:0 0 auto;padding:9px 15px;border-radius
       </button>
     </header>
 
+    <Onboarding v-if="showOnboarding" @finished="() => { showOnboarding = false; Preferences.set({ key: 'onboardingDone', value: 'true' }) }" />
     <div v-if="hasProjects" class="rowsc" style="flex:0 0 auto; display:flex; gap:8px; padding:4px 18px 10px; overflow-x:auto; z-index:4;">
       <button @click="filter = 'all'" class="tapfx" :style="chipBase(filter === 'all')">Tous</button>
       <button v-for="p in store.projects" :key="p.id" @click="filter = p.id" class="tapfx" :style="chipBase(filter === p.id)">{{ p.name }}</button>
@@ -335,7 +355,7 @@ const chipBase = (sel: boolean) => `flex:0 0 auto;padding:9px 15px;border-radius
         </div>
         <div v-for="task in grp.tasks" :key="task.id" style="position:relative; overflow:hidden; margin:14px 4px; border-radius:5px;">
           <!-- Delete background revealed on swipe -->
-          <div style="position:absolute; inset:0; background:#C25A4A; border-radius:5px; display:flex; align-items:center; padding-left:20px;">
+          <div v-if="!task.done" style="position:absolute; inset:0; background:#C25A4A; border-radius:5px; display:flex; align-items:center; padding-left:20px;">
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/></svg>
             <span style="color:white; font-weight:600; font-size:14px; margin-left:10px;">Supprimer</span>
           </div>
