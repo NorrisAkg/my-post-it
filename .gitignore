@@ -19,6 +19,7 @@ logs
 .idea
 .artifacts
 *.artifacts
+coverage
 
 # Local env files
 .env
