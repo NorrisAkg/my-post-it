@@ -17,14 +17,36 @@ export type Project = {
   name: string
 }
 
+const generateId = () => {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID()
+  }
+  return Date.now().toString(36) + Math.random().toString(36).substring(2, 9)
+}
+
 export const useTasksStore = defineStore('tasks', () => {
-  const tasks = useIDBKeyval<Task[]>('postit.tasks.v1', [])
-  const projects = useIDBKeyval<Project[]>('postit.projects.v1', [])
+  const { data: rawTasks } = useIDBKeyval<Task[]>('postit.tasks.v1', [])
+  const { data: rawProjects } = useIDBKeyval<Project[]>('postit.projects.v1', [])
+
+  const ensureTasks = (): Task[] => {
+    if (!Array.isArray(rawTasks.value)) {
+      rawTasks.value = []
+    }
+    return rawTasks.value
+  }
+
+  const ensureProjects = (): Project[] => {
+    if (!Array.isArray(rawProjects.value)) {
+      rawProjects.value = []
+    }
+    return rawProjects.value
+  }
 
   const addTask = (title: string, note: string, color: string, projectId: string | null = null) => {
-    const maxOrder = tasks.value.filter(t => !t.done).reduce((m, t) => Math.max(m, t.order), -1)
-    tasks.value.push({
-      id: crypto.randomUUID(),
+    const list = ensureTasks()
+    const maxOrder = list.filter(t => !t.done).reduce((m, t) => Math.max(m, t.order), -1)
+    list.push({
+      id: generateId(),
       title,
       note,
       color,
@@ -36,39 +58,45 @@ export const useTasksStore = defineStore('tasks', () => {
   }
 
   const updateTask = (id: string, updates: Partial<Task>) => {
-    const index = tasks.value.findIndex(t => t.id === id)
+    const list = ensureTasks()
+    const index = list.findIndex(t => t.id === id)
     if (index !== -1) {
-      tasks.value[index] = { ...tasks.value[index], ...updates }
+      list[index] = { ...list[index], ...updates }
     }
   }
 
   const toggleDone = (id: string) => {
-    const task = tasks.value.find(t => t.id === id)
+    const list = ensureTasks()
+    const task = list.find(t => t.id === id)
     if (task) {
       task.done = !task.done
     }
   }
 
   const removeTask = (id: string) => {
-    const index = tasks.value.findIndex(t => t.id === id)
+    const list = ensureTasks()
+    const index = list.findIndex(t => t.id === id)
     let removedTask = null
     if (index !== -1) {
-      removedTask = tasks.value[index]
-      tasks.value.splice(index, 1)
+      removedTask = list[index]
+      list.splice(index, 1)
     }
     return removedTask
   }
 
   const restoreTask = (task: Task) => {
-    tasks.value.push(task)
+    const list = ensureTasks()
+    list.push(task)
   }
 
   const clearDone = () => {
-    tasks.value = tasks.value.filter(t => !t.done)
+    const list = ensureTasks()
+    rawTasks.value = list.filter(t => !t.done)
   }
 
   const reorder = (dragId: string, overId: string) => {
-    const all = [...tasks.value].sort((a, b) => a.order - b.order)
+    const list = ensureTasks()
+    const all = [...list].sort((a, b) => a.order - b.order)
     const from = all.findIndex(t => t.id === dragId)
     const to = all.findIndex(t => t.id === overId)
     if (from < 0 || to < 0) return
@@ -79,26 +107,30 @@ export const useTasksStore = defineStore('tasks', () => {
     const orderMap: Record<string, number> = {}
     all.forEach((t, i) => { orderMap[t.id] = i })
     
-    tasks.value = tasks.value.map(t => ({ ...t, order: orderMap[t.id] }))
+    rawTasks.value = list.map(t => ({ ...t, order: orderMap[t.id] ?? t.order }))
   }
 
   // Projects
   const addProject = (name: string) => {
     const trimmed = name.trim()
     if (!trimmed) return null
-    const id = crypto.randomUUID()
-    projects.value.push({ id, name: trimmed })
+    const list = ensureProjects()
+    const id = generateId()
+    list.push({ id, name: trimmed })
     return id
   }
 
   const removeProject = (id: string) => {
-    projects.value = projects.value.filter(p => p.id !== id)
-    tasks.value = tasks.value.map(t => t.projectId === id ? { ...t, projectId: null } : t)
+    const projList = ensureProjects()
+    rawProjects.value = projList.filter(p => p.id !== id)
+    
+    const taskList = ensureTasks()
+    rawTasks.value = taskList.map(t => t.projectId === id ? { ...t, projectId: null } : t)
   }
 
   return {
-    tasks,
-    projects,
+    tasks: rawTasks,
+    projects: rawProjects,
     addTask,
     updateTask,
     toggleDone,
